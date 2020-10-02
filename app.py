@@ -59,12 +59,12 @@ def get_data(search_string):
         print('Username', 'Player Name','Balance')
         for row in values:
             if search_string.lower() in row[1].lower() or search_string.lower() in row[2].lower():
-                return_value.append([row[1],row[2],row[3]])
+                return_value.append([row[1],row[2],row[4]])
                 # Print columns A and E, which correspond to indices 0 and 4.
                 try:
-                    print('%s, %s, %s' % (row[1],row[2],row[3]))
+                    print('%s, %s, %s' % (row[1],row[2],row[4]))
                 except:
-                    print('%s, %s' % (row[1],row[3]))
+                    print('%s, %s' % (row[1],row[4]))
     return return_value
 
 def get_team_data(search_string):
@@ -105,12 +105,12 @@ def get_team_data(search_string):
         print('Username', 'Player Name','Balance')
         for row in values:
             if search_string.lower() in row[0].lower():
-                return_value.append([row[1],row[2],row[3],row[0]])
+                return_value.append([row[1],row[2],row[4],row[0]])
                 # Print columns A and E, which correspond to indices 0 and 4.
                 try:
-                    print('%s, %s, %s' % (row[1],row[2],row[3],row[0]))
+                    print('%s, %s, %s' % (row[1],row[2],row[4],row[0]))
                 except:
-                    print('%s, %s' % (row[1],row[3]))
+                    print('%s, %s' % (row[1],row[4]))
     return return_value
 
 def get_transactions(search_string):

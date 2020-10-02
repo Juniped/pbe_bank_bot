@@ -1,2 +1,2 @@
-# pbe_bank_bot
-NSFL bank bot but for PBE
+# nsfl_bank_bot
+queries the NSFL bank to get balances
