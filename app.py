@@ -15,7 +15,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # The ID and range of a sample spreadsheet.
 SAMPLE_SPREADSHEET_ID = '15OMqbS-8cA21JFdettLs6A0K4A1l4Vjls7031uAFAkc'
-SAMPLE_RANGE_NAME = 'Shorrax Import Player Pool!A2:D'
+SAMPLE_RANGE_NAME = 'Shorrax Import Player Pool!A2:E'
 
 @client.event
 async def on_ready():
@@ -48,8 +48,7 @@ def get_data(search_string):
 
     # Call the Sheets API
     sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                range=SAMPLE_RANGE_NAME).execute()
+    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,range=SAMPLE_RANGE_NAME).execute()
     values = result.get('values', [])
     # print(values)
     return_value = []
