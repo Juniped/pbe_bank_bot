@@ -12,6 +12,9 @@ google-auth-oauthlib = "*"
 asyncio = "*"
 cryptography = "*"
 discord-py = "*"
+sqlalchemy = "*"
+mysql-connector-python = "*"
+mysqlclient = "*"
 
 [requires]
 python_version = "3.7"
