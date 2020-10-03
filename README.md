@@ -1,2 +1,2 @@
-# nsfl_bank_bot
-queries the NSFL bank to get balances
+# PBE_bank_bot
+queries the PBE bank to get balances
