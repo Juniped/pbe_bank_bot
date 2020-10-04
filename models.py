@@ -13,7 +13,7 @@ Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
 ## Debug Mode Flag
-debug = True
+debug = False
 
 def test_connection():
     print(engine)
@@ -25,7 +25,6 @@ def create_tables():
 
 @contextmanager
 def get_session():
-    print(f"Debug Mode: {debug}")
     session = Session()
     try:
         yield session
@@ -33,7 +32,7 @@ def get_session():
             session.rollback()
         else:
             session.commit()
-    except:
+    except Exception as e:
         session.rollback()
         raise
     finally:
@@ -44,12 +43,6 @@ class User(Base):
     id = Column('id', Integer, primary_key=True, nullable=False)
     discord_id = Column('discord_id', String(100), nullable=False)
     forum_name = Column('forum_name', String(100), nullable=False)
-
-    def set_forum_name(self, new_name):
-        self.forum_name = new_name
-
-    def get_forum_name(self):
-        return self.forum_name
 
 if __name__ == "__main__":
     create_tables()

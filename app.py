@@ -112,11 +112,6 @@ def get_team_data(search_string):
         for row in values:
             if search_string.lower() in row[0].lower():
                 return_value.append([row[1],row[2],row[4],row[0]])
-                # Print columns A and E, which correspond to indices 0 and 4.
-                try:
-                    print('%s, %s, %s' % (row[1],row[2],row[4],row[0]))
-                except:
-                    print('%s, %s' % (row[1],row[4]))
     return return_value
 
 def get_transactions(search_string):
@@ -178,6 +173,8 @@ async def help(message, input_data):
         "'$tbalance' to query the bank for a team name",
         "`$transactions`  or `$transactions <search string>` to get a list of your last 10 transactions",
         "     If you discord username is different then your jcink username you have to supply a search string. Either username for transactions or username/player name for balance.",
+        "`$claim <name>` to bind a player or forum name to your discord id",
+        "`$who` to find out what name is associated with your account",
         "`$invite` to get an invite link",
         "$help displaays this help message",
     ]
@@ -185,44 +182,79 @@ async def help(message, input_data):
 
 
 async def get_balance(message, input_data):
+    discord_id = message.author.id
+    #Check to see if the user has an ID associated already
     if input_data == "":
-        requestor_username = message.author.name
+        with get_session() as session:
+            user = session.query(User).filter(User.discord_id == discord_id).first()
+            if user is None:
+                await message.channel.send("You can claim a forum or player name with $claim!")
+                requestor_username = message.author.name
+            else:
+                requestor_username = user.forum_name
     else: 
         requestor_username = input_data
+    
     data = get_data(requestor_username)
     print_string = (
         f"```\n"
-        f"-------------------------------------------------\n"
+        f"------------------------------------------------\n"
         f"|   Username    |  Player Name  |     Balance   |\n"
     )
     for value in data:
         print_string = print_string + f"|{value[0]:^15.15}|{value[1]:^15.15}|{value[2]:^15.15}|\n"
-    print_string += f"-------------------------------------------------\n```"
+    print_string += f"------------------------------------------------\n```"
     await message.channel.send(f"{print_string}")
-
-def create_user(discord_id, forum_name, session):
-    new_user = User(
-        discord_id = discord_id,
-        forum_name = forum_name,
-    )
-    session.add(new_user)
+    
+async def get_team_balance(message, input_data):
+    if len(input_data) == 0:
+        await message.channel.send("Please supply a team name")
+        return
+    else:
+        data = get_team_data(input_data)
+        if len(data) == 0:
+            await message.channel.send("No results found, you may have supplied a location not a team name\n I.E. Sarasota not Supernova")
+            return
+        print_string = (
+            f"```Team: {data[0][3]}\n"
+            f"------------------------------------------------\n"
+            f"|   Username    |  Player Name  |     Balance   |\n"
+        )
+        for value in data:
+            print_string = print_string + f"|{value[0]:^15.15}|{value[1]:^15.15}|{value[2]:^15.15}|\n"
+        print_string += f"------------------------------------------------\n```"
+        await message.channel.send(f"{print_string}")
 
 async def claim(message, input_data):
     discord_id = message.author.id
     forum_name = input_data
     if input_data == "":
         await message.channel.send("Please provide a username to claim")
+        return
     with get_session() as session:
         user = session.query(User).filter(User.discord_id == discord_id).first()
         if user is None:
-            create_user(discord_id, forum_name, session)
+            new_user = User(
+                discord_id = discord_id,
+                forum_name = forum_name,
+            )
+            session.add(new_user)
+            await message.channel.send(f"Associated account with name: {forum_name}")
         else:
-            user.set_forum_name(forum_name)
-    await message.channel.send(f"Associated account with name {forum_name}")
-    pass
+            old_name = user.forum_name
+            user.forum_name = forum_name
+            await message.channel.send(
+                f"Changed association from: {old_name} -> {forum_name}"
+            )
 
 async def who_am_i(message, input_data):
-    pass
+    discord_id = message.author.id
+    with get_session() as session:
+        user = session.query(User).filter(User.discord_id == discord_id).first()
+        if user is None:
+            await message.channel.send("You have no name associated with this account, use $claim to associate one!")
+        else:
+            await message.channel.send(f"This account is associated with the name: {user.forum_name}")
 
 @client.event
 async def on_message(message):
@@ -230,6 +262,8 @@ async def on_message(message):
         "help": help,
         "balance": get_balance,
         "claim":claim,
+        "who":who_am_i,
+        "tbalance": get_team_balance,
     }
     # Is a bot or myself sending this message? If so ABORT ABORT
     if message.author.bot:
