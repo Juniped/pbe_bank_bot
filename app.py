@@ -10,7 +10,7 @@ from config import dev_token, prod_token
 from models import *
 
 # Dev Instance
-dev = True
+dev = False
 if dev:
     token = dev_token
 else:
@@ -62,7 +62,6 @@ def get_data(search_string):
     if not values:
         print('No data found.')
     else:
-        print('Username', 'Player Name','Balance')
         for row in values:
             if search_string.lower() in row[1].lower() or search_string.lower() in row[2].lower():
                 return_value.append([row[1],row[2],row[4]])
@@ -108,7 +107,6 @@ def get_team_data(search_string):
     if not values:
         print('No data found.')
     else:
-        print('Username', 'Player Name','Balance')
         for row in values:
             if search_string.lower() in row[0].lower():
                 return_value.append([row[1],row[2],row[4],row[0]])
@@ -149,7 +147,6 @@ def get_transactions(search_string):
     if not values:
         print('No data found.')
     else:
-        print('Date','Username','Net','Notes')
         for row in values:
             if search_string.lower() in row[2].lower():
                 try:
@@ -256,6 +253,30 @@ async def who_am_i(message, input_data):
         else:
             await message.channel.send(f"This account is associated with the name: {user.forum_name}")
 
+async def transactions(message, input_data):
+    discord_id = message.author.id
+    if input_data == "":
+        with get_session() as session:
+            user = session.query(User).filter(User.discord_id == discord_id).first()
+            if user is None:
+                await message.channel.send("You can claim a forum or player name with $claim!")
+                requestor_username = message.author.name
+            else:
+                requestor_username = user.forum_name
+    else: 
+        requestor_username = input_data
+    data = get_transactions(requestor_username)
+    print_string = "Date     | Username | Net Tran  | Notes\n"
+    for value in data[-10:]:
+        try:
+            print_string = print_string + f"{value[0]}|{value[1]:^10.10}|{value[2]:12.12}| {value[3]}" + "\n"
+        except:
+            print_string = print_string + f"{value[0]}|{value[1]:^10.10}|{value[2]:12.12}" + "\n"
+    await message.channel.send(f"```{print_string}```")
+
+async def invite(message, input_data):
+    await message.channel.send("https://discord.com/api/oauth2/authorize?client_id=732050770622546042&permissions=0&scope=bot")
+
 @client.event
 async def on_message(message):
     command_mapping = {
@@ -264,6 +285,8 @@ async def on_message(message):
         "claim":claim,
         "who":who_am_i,
         "tbalance": get_team_balance,
+        "transactions": transactions,
+        "invite":invite,
     }
     # Is a bot or myself sending this message? If so ABORT ABORT
     if message.author.bot:
@@ -279,50 +302,6 @@ async def on_message(message):
             return
         else:
             await command_function(message, input_data)
-
-        ## Old Command Code
-#         elif content.startswith("tbalance"):
-#             m = content[8:]
-#             m = m.strip()
-#             if len(m) == 0:
-#                 await message.channel.send("Please supply a team name")
-#                 return
-#             else:
-#                 # m = message.author.name
-#                 data = get_team_data(m)
-#                 print_string = f"**Team: {data[0][3]}** \nUsername, Player Name, Balance\n"
-#                 for value in data:
-#                 # random_int = random.randint(0,len(lines)-1)
-#                     try:
-#                         print_string = print_string + f"{value[0]}, {value[1]}, {value[2]}" + "\n"
-#                     except:
-#                         print(value)
-#                 await message.channel.send(f"{print_string}")
-
-#         elif content.startswith("help"):
-#             await message.channel.send("""
-# Use `$balance` or`$balance <search string>` to query the bank
-# Use '$tbalance' to query the bank for a team name
-# Use `$transactions`  or `$transactions <search string>` to get a list of your last 10 transactions
-# Use `$invite` to get an invite link
-# If you discord username is different then your jcink username you have to supply a search string. Either username for transactions or username/player name for balance.
-#             """)
-        
-#         elif content.startswith("invite"):
-#             await message.channel.send("https://discord.com/api/oauth2/authorize?client_id=732050770622546042&permissions=0&scope=bot")
-
-#         elif content.startswith("transactions"):
-#             m = content[12:].strip()
-#             if len(m) == 0:
-#                 m = message.author.name
-#             data = get_transactions(m)
-#             print_string = "Date, Username, Net Tran, Notes\n"
-#             for value in data[-10:]:
-#                 try:
-#                     print_string = print_string + f"{value[0]}, {value[1]}, {value[2]}, {value[3]}" + "\n"
-#                 except:
-#                     print_string = print_string + f"{value[0]}, {value[1]}, {value[2]}" + "\n"
-#             await message.channel.send(f"```{print_string}```")
 
 
 print("Starting Bank Bot")
