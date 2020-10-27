@@ -23,40 +23,13 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # The ID and range of a sample spreadsheet.
 SAMPLE_SPREADSHEET_ID = '15OMqbS-8cA21JFdettLs6A0K4A1l4Vjls7031uAFAkc'
 SAMPLE_RANGE_NAME = 'Shorrax Import Player Pool!A2:E'
-
+media_range = 'Media Logs!A2:P'
 @client.event
 async def on_ready():
     print("Weapons Online")
 
 def get_data(search_string):
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
-
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,range=SAMPLE_RANGE_NAME).execute()
-    values = result.get('values', [])
+    values = get_rows(SAMPLE_RANGE_NAME)
     # print(values)
     return_value = []
     if not values:
@@ -73,35 +46,7 @@ def get_data(search_string):
     return return_value
 
 def get_team_data(search_string):
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
-
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                range=SAMPLE_RANGE_NAME).execute()
-    values = result.get('values', [])
+    values = get_rows(SAMPLE_RANGE_NAME)
     # print(values)
     return_value = []
     if not values:
@@ -113,35 +58,7 @@ def get_team_data(search_string):
     return return_value
 
 def get_transactions(search_string):
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
-
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                range="Logs!A6:H").execute()
-    values = result.get('values', [])
+    values = get_rows("Logs!A6:H")
     # print(values)
     return_value = []
     if not values:
@@ -163,6 +80,79 @@ def get_transactions(search_string):
                     pass
     return return_value
 
+async def get_media_transactions(message, input_data):
+    discord_id = message.author.id
+    requestor_username = ""
+    #Check to see if the user has an ID associated already
+    if input_data == "":
+        with get_session() as session:
+            user = session.query(User).filter(User.discord_id == discord_id).first()
+            if user is None:
+                await message.channel.send("You can claim a forum or player name with $claim!")
+                requestor_username = message.author.name
+            else:
+                requestor_username = user.forum_name
+    else: 
+        requestor_username = input_data
+
+    values = get_rows(media_range)
+    results = []
+    if not values:
+        print('No data found.')
+    else:
+        for row in values:
+            if  requestor_username.lower() in row[1].lower():
+                try:
+                    results.append([row[1],row[0],row[2],row[15]])
+                except:
+                    try:
+                        results.append([row[1],row[0],row[2],row[15]])
+                    except:
+                        continue
+    # Date	Username	Media type	Media title	Word Count	Base Pay	no bonus	tier 1	tier 2	tier 3	tier 4	Tiered Bonus	Extra Bonus	Extra Bonus Reason	Presser	Total Payout
+    print_string = (
+        f"```\n"
+        f" NOTE: Media Logs only work with forum username\n"
+        f"------------------------------------------------------------\n"
+        f"|   Username    |  Date   |   Media type  |   Total Payout   | \n"
+    )
+    for value in results:
+        print_string = print_string + f"|{value[0]:^15.15}|{value[1]:^9.9}|{value[2]:^15.15}|{value[3]:^18.18}|\n"
+    print_string += f"------------------------------------------------------------\n```"
+    await message.channel.send(f"{print_string}")
+   
+
+def get_rows(range):
+    """Shows basic usage of the Sheets API.
+    Prints values from a sample spreadsheet.
+    """
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+
+    service = build('sheets', 'v4', credentials=creds)
+
+    # Call the Sheets API
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                range=range).execute()
+    values = result.get('values', [])
+    return values
 
 async def help(message, input_data):
     help_messages = [
@@ -287,6 +277,7 @@ async def on_message(message):
         "tbalance": get_team_balance,
         "transactions": transactions,
         "invite":invite,
+        "media": get_media_transactions,
     }
     # Is a bot or myself sending this message? If so ABORT ABORT
     if message.author.bot:
